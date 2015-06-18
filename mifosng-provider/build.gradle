@@ -4,16 +4,16 @@ gradle clean tomcatrunwar
 '''
 
 buildscript {
-  repositories {
-  	 jcenter()
-  }
+    repositories {
+  	    jcenter()
+    }
 
-  dependencies {
-     classpath 'org.gradle.api.plugins:gradle-tomcat-plugin:1.0',
-               'nl.javadude.gradle.plugins:license-gradle-plugin:0.11.0',
-               'org.zeroturnaround:gradle-jrebel-plugin:1.1.2',
-               'org.springframework.boot:spring-boot-gradle-plugin:1.1.6.RELEASE' // also change springDataJpaVersion below
-  }
+    dependencies {
+        classpath 'org.gradle.api.plugins:gradle-tomcat-plugin:1.0',
+                  'nl.javadude.gradle.plugins:license-gradle-plugin:0.11.0',
+                  'org.zeroturnaround:gradle-jrebel-plugin:1.1.2',
+                  'org.springframework.boot:spring-boot-gradle-plugin:1.1.6.RELEASE' // also change springDataJpaVersion below
+    }
 }
 
 apply plugin: 'rebel'
@@ -31,13 +31,13 @@ sourceCompatibility = JavaVersion.VERSION_1_7
 /* define binary compatibility version */
 targetCompatibility = JavaVersion.VERSION_1_7
 
-project.ext.springBootVersion = '1.1.6.RELEASE'
-project.ext.springVersion = '4.0.7.RELEASE'
-project.ext.jerseyVersion = '1.17'
+project.ext.springBootVersion    = '1.1.6.RELEASE'
+project.ext.springVersion        = '4.0.7.RELEASE'
+project.ext.jerseyVersion        = '1.17'
 project.ext.springDataJpaVersion = '1.7.0.RELEASE' // also change spring-boot-gradle-plugin version above
 
-project.ext.mysqlUser='root'
-project.ext.mysqlPassword='mysql'
+project.ext.mysqlUser     ='root'
+project.ext.mysqlPassword ='mysql'
 
 
 group = 'org.mifosplatform'
@@ -45,7 +45,7 @@ group = 'org.mifosplatform'
 repositories {
 	jcenter()
 	maven {
-	url "http://nexus.pentaho.org/content/repositories/pentaho-public-release-repos/"
+	    url "http://nexus.pentaho.org/content/repositories/pentaho-public-release-repos/"
     }
 	// mavenLocal() // useful for local dev using MariaDB4j SNAPSHOTs (not needed for real-world non-SNAPHOT builds)
 }
@@ -57,9 +57,10 @@ configurations {
 	runtime
 	all*.exclude group: 'commons-logging'
 }
+
 /* Pick up dependencies based on the environemnt, defaults to production */
 if (project.hasProperty('env') && project.getProperty('env') == 'dev') {
-    apply from:  'dev-dependencies.gradle'
+    apply from: 'dev-dependencies.gradle'
 }  else {
     apply from: 'dependencies.gradle'
 }
@@ -155,24 +156,24 @@ sourceSets.test.output.resourcesDir = sourceSets.test.output.classesDir
 
 /* Exclude maria db and embedded tomcat related files for non dev builds */
 if (!(project.hasProperty('env') && project.getProperty('env') == 'dev')) {
-sourceSets {
-    main {
-        java {
-            exclude '**/Server*'
-            exclude '**/MariaDB4j*'
-            exclude '**/EmbeddedTomcatWithSSLConfiguration.java'
+    sourceSets {
+        main {
+            java {
+                exclude '**/Server*'
+                exclude '**/MariaDB4j*'
+                exclude '**/EmbeddedTomcatWithSSLConfiguration.java'
+            }
+        }
+        test {
+            java {
+                exclude '**/core/boot/tests/**'
+            }
         }
     }
-    test {
-    	java {
-    		exclude '**/core/boot/tests/**'
-    	}
-    }
-}
 }
 
 sourceSets {
- integrationTest {
+    integrationTest {
     	compileClasspath += main.output + test.output
         runtimeClasspath += main.output + test.output
     }
@@ -191,11 +192,9 @@ task integrationTest(type:Test){
         tomcatRunWar.execute()
     }
 
-
     testClassesDir = project.sourceSets.integrationTest.output.classesDir
     classpath = project.sourceSets.integrationTest.runtimeClasspath
 }
-
 
 import groovy.sql.Sql
 
@@ -209,30 +208,31 @@ dependencies {
     driver 'mysql:mysql-connector-java:5.1.16'
 }
 
-URLClassLoader loader = GroovyObject.class.classLoader
-configurations.driver.each {File file ->
-    loader.addURL(file.toURL())
+URLClassLoader loader = (URLClassLoader)GroovyObject.class.classLoader
+configurations.driver.each {
+    File file -> loader.addURL(file.toURI().toURL())
 }
 
-task createDB<<{
+task createDB << {
     description= "Creates the Database. Needs database name to be passed (like: -PdbName=someDBname)"
     sql = Sql.newInstance( 'jdbc:mysql://localhost:3306/', mysqlUser, mysqlPassword, 'com.mysql.jdbc.Driver' )
     sql.execute( 'create database '+"`$dbName`" )
 }
 
-task dropDB<<{
+task dropDB << {
     description= "Drops the specified database. The database name has to be passed (like: -PdbName=someDBname)"
     sql = Sql.newInstance( 'jdbc:mysql://localhost:3306/', mysqlUser, mysqlPassword, 'com.mysql.jdbc.Driver' )
     sql.execute( 'DROP DATABASE '+"`$dbName`")
 }
-task setBlankPassword<<{
+
+task setBlankPassword << {
     sql = Sql.newInstance( 'jdbc:mysql://localhost:3306/', mysqlUser, mysqlPassword, 'com.mysql.jdbc.Driver' )
     sql.execute('USE `mifosplatform-tenants`')
     sql.execute('UPDATE mifosplatform-tenants.tenants SET schema_server = \'localhost\', schema_server_port = \'3306\', schema_username = \'mifos\', schema_password = \'mysql\' WHERE id=1;')
 }
 
-
 apply plugin: 'flyway'
+
 buildscript {
     repositories {
         mavenCentral()
@@ -244,14 +244,13 @@ buildscript {
     }
 }
 
-
 flyway {
     url = "jdbc:mysql://localhost:3306/mifostenant-default"
     user = mysqlUser
     password = mysqlPassword
 }
 
-task migrateTenantDB<<{
+task migrateTenantDB << {
     description="Migrates a Tenant DB. Optionally can pass dbName. Defaults to 'mifostenant-default' (Example: -PdbName=someTenantDBname)"
 
 	def filePath = "filesystem:$projectDir" + '/src/main/resources/sql/migrations/core_db'
@@ -267,7 +266,7 @@ task migrateTenantDB<<{
     flywayMigrate.execute()
 }
 
-task showTenantDBInfo<<{
+task showTenantDBInfo << {
     description="Shows the migration info for a Tenant DB. Optionally can pass dbName. Defaults to 'mifostenant-default' (Example: -PdbName=someTenantDBname)"
     
 	def filePath = "filesystem:$projectDir" + '/src/main/resources/sql/migrations/core_db'
@@ -281,8 +280,7 @@ task showTenantDBInfo<<{
     flywayInfo.execute()
 }
 
-
-task migrateTenantListDB<<{
+task migrateTenantListDB << {
     description="Migrates a Tenant List DB. Optionally can pass dbName. Defaults to 'mifosplatform-tenants' (Example: -PdbName=someDBname)"
 
 	def filePath = "filesystem:$projectDir" + '/src/main/resources/sql/migrations/list_db'
@@ -297,7 +295,7 @@ task migrateTenantListDB<<{
     flywayMigrate.execute()
 }
 
-task showTenantListDBInfo<<{
+task showTenantListDBInfo << {
     description="Shows the migration info for a List DB. Optionally can pass dbName. Defaults to 'mifosplatform-tenants' (Example: -PdbName=someDBname)"
     
 	def filePath = "filesystem:$projectDir" + '/src/main/resources/sql/migrations/list_db'
@@ -311,7 +309,7 @@ task showTenantListDBInfo<<{
     flywayInfo.execute()
 }
 
-task repairTenantDB<<{
+task repairTenantDB << {
     description="repair migrate"
     
 	def filePath = "filesystem:$projectDir" + '/src/main/resources/sql/migrations/list_db'
@@ -346,6 +344,7 @@ def qualifyVersionIfNecessary(version) {
 springBoot {
     mainClass = 'org.mifosplatform.ServerWithMariaDB4jApplication'
 }
+
 bootRepackage {
     mainClass = 'org.mifosplatform.ServerWithMariaDB4jApplication'
 }
